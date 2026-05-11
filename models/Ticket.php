@@ -184,7 +184,16 @@ class Ticket {
             $this->db->bind(':staff_id', $staffId);
             $this->db->bind(':ticket_id', $ticketId);
             
-            return $this->db->execute();
+            $result = $this->db->execute();
+            
+            // Create notification if assignment was successful
+            if ($result) {
+                require_once __DIR__ . '/Notification.php';
+                $notificationModel = new Notification();
+                $notificationModel->createAssignmentNotification($ticketId, $staffId);
+            }
+            
+            return $result;
         } catch (Exception $e) {
             return false;
         }
@@ -193,6 +202,11 @@ class Ticket {
     // Update ticket status
     public function updateStatus($ticketId, $status, $assignedStaffId = null) {
         try {
+            // Get current ticket details for notification
+            $this->db->query("SELECT user_id, status FROM tickets WHERE id = :id");
+            $this->db->bind(':id', $ticketId);
+            $currentTicket = $this->db->single();
+            
             $sql = "UPDATE tickets SET status = :status";
             if ($assignedStaffId !== null) {
                 $sql .= ", assigned_staff_id = :assigned_staff_id";
@@ -207,7 +221,16 @@ class Ticket {
                 $this->db->bind(':assigned_staff_id', $assignedStaffId);
             }
             
-            return $this->db->execute();
+            $result = $this->db->execute();
+            
+            // Create notification if update was successful and status changed
+            if ($result && $currentTicket && $currentTicket['status'] !== $status) {
+                require_once __DIR__ . '/Notification.php';
+                $notificationModel = new Notification();
+                $notificationModel->createStatusUpdateNotification($ticketId, $status);
+            }
+            
+            return $result;
             
         } catch (Exception $e) {
             return false;
@@ -459,6 +482,11 @@ class Ticket {
     // Update ticket
     public function updateTicket($ticketId, $data) {
         try {
+            // Get current ticket details for notification
+            $this->db->query("SELECT user_id, status FROM tickets WHERE id = :id");
+            $this->db->bind(':id', $ticketId);
+            $currentTicket = $this->db->single();
+            
             $setClause = [];
             foreach ($data as $key => $value) {
                 $setClause[] = "$key = :$key";
@@ -473,7 +501,23 @@ class Ticket {
             }
             $this->db->bind(':ticket_id', $ticketId);
             
-            return $this->db->execute();
+            $result = $this->db->execute();
+            
+            // Create notification if update was successful and status changed
+            if ($result && $currentTicket && isset($data['status']) && $currentTicket['status'] !== $data['status']) {
+                require_once __DIR__ . '/Notification.php';
+                $notificationModel = new Notification();
+                $notificationModel->createStatusUpdateNotification($ticketId, $data['status']);
+            }
+            
+            // Create assignment notification if staff was assigned
+            if ($result && $currentTicket && isset($data['assigned_staff_id']) && $data['assigned_staff_id']) {
+                require_once __DIR__ . '/Notification.php';
+                $notificationModel = new Notification();
+                $notificationModel->createAssignmentNotification($ticketId, $data['assigned_staff_id']);
+            }
+            
+            return $result;
         } catch (Exception $e) {
             return false;
         }
@@ -522,7 +566,16 @@ class Ticket {
             $this->db->bind(':ticket_id', $ticketId);
             $this->db->bind(':staff_id', $staffId);
             
-            return $this->db->execute();
+            $result = $this->db->execute();
+            
+            // Create notification if assignment was successful
+            if ($result) {
+                require_once __DIR__ . '/Notification.php';
+                $notificationModel = new Notification();
+                $notificationModel->createAssignmentNotification($ticketId, $staffId);
+            }
+            
+            return $result;
         } catch (Exception $e) {
             return false;
         }
