@@ -17,7 +17,7 @@ require_once '../helpers/auth_helper.php';
         <!-- Sidebar -->
         <nav class="sidebar">
             <div class="sidebar-header">
-                <i class="fas fa-headset fa-2x text-white"></i>
+                <img src="../rmmc.logo.png" alt="RMMC Logo" class="sidebar-logo-small">
                 <h4 class="text-white ms-2">Helpdesk</h4>
             </div>
             
@@ -36,12 +36,14 @@ require_once '../helpers/auth_helper.php';
                         <span>My Tickets</span>
                     </a>
                 </li>
+                <?php if (!hasRole('admin')): ?>
                 <li class="user-menu">
                     <a href="<?php echo $basePath; ?>create-ticket.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'create-ticket.php' ? 'active' : ''; ?>">
                         <i class="fas fa-plus"></i>
                         <span>Create Ticket</span>
                     </a>
                 </li>
+                <?php endif; ?>
                 
                 <?php if (hasRole('staff')): ?>
                 <!-- Staff Menu Items -->

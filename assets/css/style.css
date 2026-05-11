@@ -259,6 +259,15 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.sidebar-logo-small {
+    width: 75px;
+    height: 75px;
+    object-fit: contain;
+    margin-left: 8px;
+    margin-right: 8px;
+    border-radius: 4px;
+}
+
 .sidebar-menu {
     list-style: none;
     padding: 1rem 0;
@@ -604,6 +613,13 @@ body {
     
     .sidebar-header {
         justify-content: center;
+    }
+    
+    .sidebar-logo-small {
+        width: 36px;
+        height: 36px;
+        margin: 0;
+        display: none;
     }
     
     .sidebar-menu {
