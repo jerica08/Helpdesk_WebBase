@@ -133,6 +133,15 @@ function generateTicketCode() {
     return 'TK' . $date . $random;
 }
 
+function getRoleBadgeClass($role) {
+    switch($role) {
+        case 'admin': return 'danger';
+        case 'staff': return 'warning';
+        case 'user': return 'info';
+        default: return 'secondary';
+    }
+}
+
 function logActivity($user_id, $action, $description) {
     // This can be implemented later for audit trail
     error_log("User ID: $user_id, Action: $action, Description: $description");

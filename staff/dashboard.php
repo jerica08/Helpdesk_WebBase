@@ -16,11 +16,11 @@ $pageTitle = 'Staff Dashboard';
 require_once '../models/Ticket.php';
 $ticketModel = new Ticket();
 
-// Get staff statistics
-$stats = $ticketModel->getTicketStats($_SESSION['user_id'], 'staff');
+// Get staff statistics - filtered by department
+$stats = $ticketModel->getTicketStats($_SESSION['user_id'], 'staff', $_SESSION['department_id']);
 
-// Get recent tickets
-$recentTickets = $ticketModel->getRecentTickets(5, $_SESSION['user_id'], 'staff');
+// Get recent tickets - filtered by department
+$recentTickets = $ticketModel->getRecentTickets(5, $_SESSION['user_id'], 'staff', $_SESSION['department_id']);
 
 // Include header
 require_once '../includes/header.php';
@@ -84,11 +84,11 @@ require_once '../includes/header.php';
     </div>
     
     <?php
-    // Get pending tickets
+    // Get pending tickets - filtered by department
     require_once '../models/Ticket.php';
     $pendingTickets = $ticketModel->getTicketsByStatus('pending');
     $pendingTickets = array_filter($pendingTickets, function($ticket) {
-        return empty($ticket['assigned_staff_id']);
+        return empty($ticket['assigned_staff_id']) && $ticket['department_id'] == $_SESSION['department_id'];
     });
     $pendingTickets = array_slice($pendingTickets, 0, 5);
     ?>

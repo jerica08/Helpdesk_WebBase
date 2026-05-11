@@ -8,7 +8,7 @@ class Ticket {
         $this->db = new Database();
     }
     
-    // Create new ticket
+    // Create new tickets
     public function create($data) {
         try {
             $ticketCode = generateTicketCode();
@@ -83,13 +83,51 @@ class Ticket {
     }
     
     // Get tickets assigned to staff
-    public function getTicketsByStaff($staffId, $limit = null, $offset = 0) {
+    public function getTicketsByStaff($staffId, $limit = null, $offset = 0, $departmentId = null) {
         try {
             $query = "SELECT t.*, u.name as user_name, d.name as department_name
                      FROM tickets t
                      LEFT JOIN users u ON t.user_id = u.id
                      LEFT JOIN departments d ON t.department_id = d.id
-                     WHERE t.assigned_staff_id = :staff_id
+                     WHERE t.assigned_staff_id = :staff_id";
+            
+            // If department ID is provided, filter by department
+            if ($departmentId) {
+                $query .= " AND t.department_id = :department_id";
+            }
+            
+            $query .= " ORDER BY t.created_at DESC";
+            
+            if ($limit) {
+                $query .= " LIMIT :limit OFFSET :offset";
+            }
+            
+            $this->db->query($query);
+            $this->db->bind(':staff_id', $staffId);
+            
+            if ($departmentId) {
+                $this->db->bind(':department_id', $departmentId);
+            }
+            
+            if ($limit) {
+                $this->db->bind(':limit', $limit, PDO::PARAM_INT);
+                $this->db->bind(':offset', $offset, PDO::PARAM_INT);
+            }
+            
+            return $this->db->resultSet();
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    
+    // Get tickets for staff (assigned + pending in their department)
+    public function getTicketsForStaff($staffId, $departmentId, $limit = null, $offset = 0) {
+        try {
+            $query = "SELECT t.*, u.name as user_name, d.name as department_name
+                     FROM tickets t
+                     LEFT JOIN users u ON t.user_id = u.id
+                     LEFT JOIN departments d ON t.department_id = d.id
+                     WHERE t.department_id = :department_id AND (t.assigned_staff_id = :staff_id OR t.status = 'pending')
                      ORDER BY t.created_at DESC";
             
             if ($limit) {
@@ -97,6 +135,7 @@ class Ticket {
             }
             
             $this->db->query($query);
+            $this->db->bind(':department_id', $departmentId);
             $this->db->bind(':staff_id', $staffId);
             
             if ($limit) {
@@ -208,7 +247,7 @@ class Ticket {
     }
     
     // Get ticket statistics for dashboard
-    public function getTicketStats($userId = null, $userRole = null) {
+    public function getTicketStats($userId = null, $userRole = null, $departmentId = null) {
         try {
             $stats = [];
             
@@ -223,12 +262,14 @@ class Ticket {
                 $this->db->bind(':user_id', $userId);
                 
             } elseif ($userRole === 'staff') {
-                // Staff stats
+                // Staff stats - only from their department
                 $this->db->query("SELECT 
                     COUNT(*) as assigned_tickets,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
                     SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
                     SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as completed
-                    FROM tickets WHERE assigned_staff_id = :staff_id");
+                    FROM tickets WHERE department_id = :department_id AND (assigned_staff_id = :staff_id OR status = 'pending')");
+                $this->db->bind(':department_id', $departmentId);
                 $this->db->bind(':staff_id', $userId);
                 
             } else {
@@ -250,7 +291,7 @@ class Ticket {
     }
     
     // Get recent tickets
-    public function getRecentTickets($limit = 5, $userId = null, $userRole = null) {
+    public function getRecentTickets($limit = 5, $userId = null, $userRole = null, $departmentId = null) {
         try {
             $sql = "SELECT t.*, d.name as department_name, s.name as assigned_staff_name,
                    u.name as user_name
@@ -264,8 +305,10 @@ class Ticket {
                 $this->db->query($sql . " ORDER BY t.created_at DESC LIMIT :limit");
                 $this->db->bind(':user_id', $userId);
             } elseif ($userRole === 'staff') {
-                $sql .= " WHERE t.assigned_staff_id = :staff_id OR t.status = 'pending'";
+                // Staff can only see tickets from their department
+                $sql .= " WHERE t.department_id = :department_id AND (t.assigned_staff_id = :staff_id OR t.status = 'pending')";
                 $this->db->query($sql . " ORDER BY t.created_at DESC LIMIT :limit");
+                $this->db->bind(':department_id', $departmentId);
                 $this->db->bind(':staff_id', $userId);
             } else {
                 $this->db->query($sql . " ORDER BY t.created_at DESC LIMIT :limit");
@@ -437,7 +480,7 @@ class Ticket {
     }
     
     // Get ticket count
-    public function getTicketCount($userId = null, $userRole = null) {
+    public function getTicketCount($userId = null, $userRole = null, $departmentId = null) {
         try {
             $query = "SELECT COUNT(*) as count FROM tickets t";
             
@@ -446,9 +489,17 @@ class Ticket {
                 $this->db->query($query);
                 $this->db->bind(':user_id', $userId);
             } elseif ($userId && $userRole === 'staff') {
-                $query .= " WHERE t.assigned_staff_id = :staff_id";
-                $this->db->query($query);
-                $this->db->bind(':staff_id', $userId);
+                // For staff, count tickets from their department (assigned + pending)
+                if ($departmentId) {
+                    $query .= " WHERE t.department_id = :department_id AND (t.assigned_staff_id = :staff_id OR t.status = 'pending')";
+                    $this->db->query($query);
+                    $this->db->bind(':department_id', $departmentId);
+                    $this->db->bind(':staff_id', $userId);
+                } else {
+                    $query .= " WHERE t.assigned_staff_id = :staff_id";
+                    $this->db->query($query);
+                    $this->db->bind(':staff_id', $userId);
+                }
             } else {
                 $this->db->query($query);
             }

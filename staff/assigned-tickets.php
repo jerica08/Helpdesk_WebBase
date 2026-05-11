@@ -25,9 +25,9 @@ $offset = ($page - 1) * $limit;
 $status = $_GET['status'] ?? '';
 $priority = $_GET['priority'] ?? '';
 
-// Get assigned tickets
-$tickets = $ticketModel->getTicketsByStaff($_SESSION['user_id'], $limit, $offset);
-$totalTickets = $ticketModel->getTicketCount($_SESSION['user_id'], 'staff');
+// Get tickets for staff (assigned + pending in their department)
+$tickets = $ticketModel->getTicketsForStaff($_SESSION['user_id'], $_SESSION['department_id'], $limit, $offset);
+$totalTickets = $ticketModel->getTicketCount($_SESSION['user_id'], 'staff', $_SESSION['department_id']);
 $totalPages = ceil($totalTickets / $limit);
 
 // Apply filters if set
