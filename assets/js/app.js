@@ -128,8 +128,11 @@ function setupTicketActions(ticket) {
             footerHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="assignTicketToMe(${ticket.id})">Assign to Me</button>`;
         } else if (ticket.assigned_staff_id == window.userId) {
             footerHtml += `
-                <button type="button" class="btn btn-primary btn-sm" onclick="updateTicketStatus(${ticket.id}, 'in_progress')">Start Task</button>
-                <button type="button" class="btn btn-success btn-sm" onclick="updateTicketStatus(${ticket.id}, 'resolved')">Mark Resolved</button>
+                <button type="button" class="btn btn-warning btn-sm" onclick="updateTicketStatus(${ticket.id}, 'pending')">Pending</button>
+                <button type="button" class="btn btn-info btn-sm" onclick="updateTicketStatus(${ticket.id}, 'assigned')">Assigned</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="updateTicketStatus(${ticket.id}, 'in_progress')">In Progress</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="updateTicketStatus(${ticket.id}, 'resolved')">Resolved</button>
+                <button type="button" class="btn btn-dark btn-sm" onclick="updateTicketStatus(${ticket.id}, 'closed')">Closed</button>
             `;
         }
     }
